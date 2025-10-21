@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Default configuration
-DEFAULT_PORT=8388
+DEFAULT_PORT=443
 DEFAULT_PASSWORD=$(openssl rand -base64 16)
 DEFAULT_METHOD="aes-256-gcm"
 
