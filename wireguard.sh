@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Default configuration
-DEFAULT_PORT=51820
+DEFAULT_PORT=443
 DEFAULT_SERVER_IP="10.0.0.1/24"
 DEFAULT_DNS="1.1.1.1, 8.8.8.8"
 DEFAULT_CLIENT_COUNT=1
@@ -200,7 +200,8 @@ fi
 if command -v ufw &> /dev/null; then
     print_info "Configuring firewall..."
     ufw allow ${WG_PORT}/udp
-    print_info "Firewall rules added for port ${WG_PORT}/udp"
+    ufw reload
+    print_info "Firewall rules added for port ${WG_PORT}/udp and ufw reloaded"
 fi
 
 # Generate QR codes for clients
