@@ -216,29 +216,27 @@ SS_BASE64=$(echo -n "${SS_CONTENT}" | base64 -w 0 2>/dev/null || echo -n "${SS_C
 SS_URI="ss://${SS_BASE64}"
 
 # Generate Clash profile
-CLASH_FILE="${CONFIG_DIR}/clash-profile.yaml"
-cat > ${CLASH_FILE} <<CLASHEOF
+echo ""
+echo "=========================================="
+print_info "Clash Profile:"
+echo "=========================================="
+cat <<CLASHEOF
+port: 7890
+socks-port: 7891
+allow-lan: true
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
 proxies:
-  - name: "Shadowsocks-${SERVER_IP}"
-    type: ss
+  - name: ${SERVER_IP}:${PORT}
     server: ${SERVER_IP}
     port: ${PORT}
+    type: ss
     cipher: ${METHOD}
-    password: "${PASSWORD}"
+    password: ${PASSWORD}
     udp: true
-
-proxy-groups:
-  - name: "Proxy"
-    type: select
-    proxies:
-      - "Shadowsocks-${SERVER_IP}"
-      - DIRECT
-
-rules:
-  - MATCH,Proxy
 CLASHEOF
-
-chmod 644 ${CLASH_FILE}
+echo ""
 
 # Generate QR code
 echo ""
@@ -250,37 +248,6 @@ echo ""
 echo "Or scan this link with your Shadowsocks client:"
 echo "${SS_URI}"
 echo ""
-
-# Print success message and connection details
-echo "=========================================="
-print_info "Shadowsocks server installation complete!"
-echo "=========================================="
-echo ""
-echo "Connection Information:"
-echo "  Server IP:     ${SERVER_IP}"
-echo "  Server Port:   ${PORT}"
-echo "  Password:      ${PASSWORD}"
-echo "  Encryption:    ${METHOD}"
-echo ""
 echo "SS URI: ${SS_URI}"
 echo ""
-echo "Service Management Commands:"
-echo "  Start:   sudo systemctl start shadowsocks-server"
-echo "  Stop:    sudo systemctl stop shadowsocks-server"
-echo "  Restart: sudo systemctl restart shadowsocks-server"
-echo "  Status:  sudo systemctl status shadowsocks-server"
-echo "  Logs:    sudo journalctl -u shadowsocks-server -f"
-echo ""
-echo "Configuration file: ${CONFIG_FILE}"
-echo "Clash profile: ${CLASH_FILE}"
-echo ""
-print_info "For Clash Verge:"
-echo "  1. Open Clash Verge → Profiles"
-echo "  2. Click 'Import' → 'Import from File'"
-echo "  3. Select: ${CLASH_FILE}"
-echo ""
-print_info "To regenerate QR code anytime, run:"
-echo "  qrencode -t ANSIUTF8 '${SS_URI}'"
-echo ""
-print_warning "IMPORTANT: Keep your password and QR code secure!"
 echo "=========================================="
