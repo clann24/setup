@@ -216,26 +216,122 @@ SS_BASE64=$(echo -n "${SS_CONTENT}" | base64 -w 0 2>/dev/null || echo -n "${SS_C
 SS_URI="ss://${SS_BASE64}"
 
 # Generate Clash profile
-echo ""
-echo "=========================================="
-print_info "Clash Profile:"
-echo "=========================================="
-cat <<CLASHEOF
+CLASH_FILE="./clash.yml"
+cat > ${CLASH_FILE} <<'CLASHEOF'
 port: 7890
 socks-port: 7891
 allow-lan: true
 mode: rule
 log-level: info
 external-controller: 127.0.0.1:9090
+
+# Proxies
 proxies:
-  - name: ${SERVER_IP}:${PORT}
-    server: ${SERVER_IP}
-    port: ${PORT}
+  - name: PROXY_NAME
+    server: PROXY_SERVER
+    port: PROXY_PORT
     type: ss
-    cipher: ${METHOD}
-    password: ${PASSWORD}
+    cipher: PROXY_CIPHER
+    password: PROXY_PASSWORD
     udp: true
+
+# DNS configuration
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  enhanced-mode: fake-ip
+  nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  fallback:
+    - 8.8.8.8
+    - 1.1.1.1
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+
+# Proxy groups
+proxy-groups:
+  - name: "PROXY"
+    type: select
+    proxies:
+      - Auto
+      - PROXY_NAME
+      - DIRECT
+
+  - name: "Auto"
+    type: url-test
+    proxies:
+      - PROXY_NAME
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+# Rule providers for automatic updates
+rule-providers:
+  gfw:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
+    path: ./ruleset/gfw.yaml
+    interval: 86400
+
+  proxy:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+
+  direct:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+
+# Rules
+rules:
+  # Local network
+  - DOMAIN-SUFFIX,local,DIRECT
+  - IP-CIDR,127.0.0.0/8,DIRECT
+  - IP-CIDR,172.16.0.0/12,DIRECT
+  - IP-CIDR,192.168.0.0/16,DIRECT
+  - IP-CIDR,10.0.0.0/8,DIRECT
+  
+  # GFW list - use proxy
+  - RULE-SET,gfw,PROXY
+  - RULE-SET,proxy,PROXY
+  
+  # China direct
+  - RULE-SET,direct,DIRECT
+  - RULE-SET,cncidr,DIRECT
+  - GEOIP,CN,DIRECT
+  
+  # Default
+  - MATCH,PROXY
 CLASHEOF
+
+# Replace placeholders with actual values
+sed -i "s/PROXY_NAME/${SERVER_IP}/g" ${CLASH_FILE}
+sed -i "s/PROXY_SERVER/${SERVER_IP}/g" ${CLASH_FILE}
+sed -i "s/PROXY_PORT/${PORT}/g" ${CLASH_FILE}
+sed -i "s/PROXY_CIPHER/${METHOD}/g" ${CLASH_FILE}
+sed -i "s/PROXY_PASSWORD/${PASSWORD}/g" ${CLASH_FILE}
+
+chmod 644 ${CLASH_FILE}
+
+echo ""
+echo "=========================================="
+print_info "Clash Profile saved to: ${CLASH_FILE}"
+echo "=========================================="
 echo ""
 
 # Generate QR code
