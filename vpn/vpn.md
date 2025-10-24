@@ -9,11 +9,12 @@ One-script automated installation for Ubuntu.
 ### Prerequisites
 - Ubuntu 20.04+
 - Root/sudo access
-- **Open UDP port 443 in your cloud security group**
+- **Open UDP port 443/444 in your cloud security group**
 
 ### Run Setup
 ```bash
-sudo ./wire.sh
+sudo bash wire.sh
+sudo bash shadow.sh
 ```
 
 The script automatically:
