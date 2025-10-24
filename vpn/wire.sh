@@ -32,7 +32,7 @@ fi
 
 # Configuration variables
 SERVER_WG_IP="10.0.0.1/24"
-SERVER_PORT="443"
+SERVER_PORT="444"
 SERVER_INTERFACE="wg0"
 WG_CONFIG_DIR="/etc/wireguard"
 CLIENT_COUNT=1
