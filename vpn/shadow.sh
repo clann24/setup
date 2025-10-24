@@ -215,6 +215,31 @@ SS_CONTENT="${METHOD}:${PASSWORD}@${SERVER_IP}:${PORT}"
 SS_BASE64=$(echo -n "${SS_CONTENT}" | base64 -w 0 2>/dev/null || echo -n "${SS_CONTENT}" | base64)
 SS_URI="ss://${SS_BASE64}"
 
+# Generate Clash profile
+CLASH_FILE="${CONFIG_DIR}/clash-profile.yaml"
+cat > ${CLASH_FILE} <<CLASHEOF
+proxies:
+  - name: "Shadowsocks-${SERVER_IP}"
+    type: ss
+    server: ${SERVER_IP}
+    port: ${PORT}
+    cipher: ${METHOD}
+    password: "${PASSWORD}"
+    udp: true
+
+proxy-groups:
+  - name: "Proxy"
+    type: select
+    proxies:
+      - "Shadowsocks-${SERVER_IP}"
+      - DIRECT
+
+rules:
+  - MATCH,Proxy
+CLASHEOF
+
+chmod 644 ${CLASH_FILE}
+
 # Generate QR code
 echo ""
 echo "=========================================="
@@ -247,6 +272,12 @@ echo "  Status:  sudo systemctl status shadowsocks-server"
 echo "  Logs:    sudo journalctl -u shadowsocks-server -f"
 echo ""
 echo "Configuration file: ${CONFIG_FILE}"
+echo "Clash profile: ${CLASH_FILE}"
+echo ""
+print_info "For Clash Verge:"
+echo "  1. Open Clash Verge → Profiles"
+echo "  2. Click 'Import' → 'Import from File'"
+echo "  3. Select: ${CLASH_FILE}"
 echo ""
 print_info "To regenerate QR code anytime, run:"
 echo "  qrencode -t ANSIUTF8 '${SS_URI}'"
