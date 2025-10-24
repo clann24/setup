@@ -7,13 +7,21 @@ external-controller: 127.0.0.1:9090
 
 # Proxies
 proxies:
-  - name: Tokyo
+  - name: 43.165.184.25
     server: 43.165.184.25
     port: 443
     type: ss
     cipher: aes-256-gcm
-    password: YXO4jQ9QBkK8PK0FJQnSmA==
+    password: ocUHsl01vsVltC8W8IbLlA==
     udp: true
+
+# Proxy groups
+proxy-groups:
+  - name: "PROXY"
+    type: select
+    proxies:
+      - 43.165.184.25
+      - DIRECT
 
 # DNS configuration
 dns:
@@ -30,22 +38,6 @@ dns:
     geoip: true
     ipcidr:
       - 240.0.0.0/4
-
-# Proxy groups
-proxy-groups:
-  - name: "PROXY"
-    type: select
-    proxies:
-      - Auto
-      - Tokyo
-      - DIRECT
-
-  - name: "Auto"
-    type: url-test
-    proxies:
-      - Tokyo
-    url: 'http://www.gstatic.com/generate_204'
-    interval: 300
 
 # Rule providers for automatic updates
 rule-providers:

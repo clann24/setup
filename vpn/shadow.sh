@@ -235,6 +235,14 @@ proxies:
     password: PROXY_PASSWORD
     udp: true
 
+# Proxy groups
+proxy-groups:
+  - name: "PROXY"
+    type: select
+    proxies:
+      - PROXY_NAME
+      - DIRECT
+
 # DNS configuration
 dns:
   enable: true
@@ -250,22 +258,6 @@ dns:
     geoip: true
     ipcidr:
       - 240.0.0.0/4
-
-# Proxy groups
-proxy-groups:
-  - name: "PROXY"
-    type: select
-    proxies:
-      - Auto
-      - PROXY_NAME
-      - DIRECT
-
-  - name: "Auto"
-    type: url-test
-    proxies:
-      - PROXY_NAME
-    url: 'http://www.gstatic.com/generate_204'
-    interval: 300
 
 # Rule providers for automatic updates
 rule-providers:
