@@ -219,15 +219,13 @@ SERVER_IP=$(curl -fs4 --max-time 5 ifconfig.me \
 
 SS_URI="ss://$(echo -n "${SS_METHOD}:${SS_PASSWORD}" | base64 -w0)@${SERVER_IP}:${SS_PORT}#warp-vps"
 
-# 确定输出目录：优先 sudo 调用者的 home，否则 $HOME
+# 输出目录：脚本运行时的当前工作目录
+OUT_DIR="$(pwd)"
 if [[ -n "${SUDO_USER:-}" ]] && [[ "${SUDO_USER}" != "root" ]]; then
-    OUT_DIR=$(getent passwd "${SUDO_USER}" | cut -d: -f6)
     OUT_OWNER="${SUDO_USER}:${SUDO_USER}"
 else
-    OUT_DIR="${HOME:-/root}"
     OUT_OWNER="$(id -un):$(id -gn)"
 fi
-[[ -d "${OUT_DIR}" ]] || OUT_DIR=/root
 info "客户端配置文件输出目录：${OUT_DIR}"
 
 # 生成 sing-box 客户端 profile（供 sing-box 官方客户端导入）
