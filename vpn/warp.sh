@@ -219,8 +219,19 @@ SERVER_IP=$(curl -fs4 --max-time 5 ifconfig.me \
 
 SS_URI="ss://$(echo -n "${SS_METHOD}:${SS_PASSWORD}" | base64 -w0)@${SERVER_IP}:${SS_PORT}#warp-vps"
 
+# 确定输出目录：优先 sudo 调用者的 home，否则 $HOME
+if [[ -n "${SUDO_USER:-}" ]] && [[ "${SUDO_USER}" != "root" ]]; then
+    OUT_DIR=$(getent passwd "${SUDO_USER}" | cut -d: -f6)
+    OUT_OWNER="${SUDO_USER}:${SUDO_USER}"
+else
+    OUT_DIR="${HOME:-/root}"
+    OUT_OWNER="$(id -un):$(id -gn)"
+fi
+[[ -d "${OUT_DIR}" ]] || OUT_DIR=/root
+info "客户端配置文件输出目录：${OUT_DIR}"
+
 # 生成 sing-box 客户端 profile（供 sing-box 官方客户端导入）
-cat > /root/client.json <<EOF
+cat > "${OUT_DIR}/client.json" <<EOF
 {
   "log": { "level": "info" },
   "dns": {
@@ -275,33 +286,10 @@ cat > /root/client.json <<EOF
   }
 }
 EOF
-chmod 600 /root/client.json
+chmod 600 "${OUT_DIR}/client.json"
 
-# 生成 Clash Verge / Mihomo 配置
-cat > /root/clash.yaml <<EOF
-# Clash Verge / Mihomo 配置 —— 走 VPS，由服务端 sing-box 自动把 AI 流量分流到 WARP
-mixed-port: 7890
-allow-lan: false
-mode: rule
-log-level: info
-ipv6: false
-external-controller: 127.0.0.1:9090
-
-dns:
-  enable: true
-  ipv6: false
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
-  fallback:
-    - https://1.1.1.1/dns-query
-    - https://8.8.8.8/dns-query
-  fallback-filter:
-    geoip: true
-    geoip-code: CN
-
+# 生成 Clash Verge 配置（严格按指定格式）
+cat > "${OUT_DIR}/clash.yaml" <<EOF
 proxies:
   - name: "warp-vps"
     type: ss
@@ -309,78 +297,19 @@ proxies:
     port: ${SS_PORT}
     cipher: ${SS_METHOD}
     password: "${SS_PASSWORD}"
-    udp: true
 
 proxy-groups:
   - name: "PROXY"
     type: select
     proxies:
       - warp-vps
-      - DIRECT
-
-rule-providers:
-  reject:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
-    path: ./ruleset/reject.yaml
-    interval: 86400
-  direct:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
-    path: ./ruleset/direct.yaml
-    interval: 86400
-  proxy:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
-    path: ./ruleset/proxy.yaml
-    interval: 86400
-  gfw:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
-    path: ./ruleset/gfw.yaml
-    interval: 86400
-  cncidr:
-    type: http
-    behavior: ipcidr
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
-    path: ./ruleset/cncidr.yaml
-    interval: 86400
 
 rules:
-  # AI 服务 —— 走 VPS，到 VPS 后由 sing-box 自动转 WARP
-  - DOMAIN-SUFFIX,openai.com,PROXY
-  - DOMAIN-SUFFIX,chatgpt.com,PROXY
-  - DOMAIN-SUFFIX,oaistatic.com,PROXY
-  - DOMAIN-SUFFIX,oaiusercontent.com,PROXY
-  - DOMAIN-SUFFIX,anthropic.com,PROXY
-  - DOMAIN-SUFFIX,claude.ai,PROXY
-  - DOMAIN-SUFFIX,claudeusercontent.com,PROXY
-  - DOMAIN-SUFFIX,gemini.google.com,PROXY
-  - DOMAIN-SUFFIX,generativelanguage.googleapis.com,PROXY
-  - DOMAIN-SUFFIX,aistudio.google.com,PROXY
-  # 本机/内网
-  - DOMAIN-SUFFIX,local,DIRECT
-  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
-  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
-  # 广告拦截
-  - RULE-SET,reject,REJECT
-  # 通用规则
-  - RULE-SET,direct,DIRECT
-  - RULE-SET,proxy,PROXY
-  - RULE-SET,gfw,PROXY
-  - RULE-SET,cncidr,DIRECT
-  - GEOIP,CN,DIRECT
   - MATCH,PROXY
 EOF
-chmod 600 /root/clash.yaml
+chmod 600 "${OUT_DIR}/clash.yaml"
 
-tee /root/ss-info.txt >/dev/null <<EOF
+tee "${OUT_DIR}/ss-info.txt" >/dev/null <<EOF
 ========== Shadowsocks 连接信息 ==========
 Server   : ${SERVER_IP}
 Port     : ${SS_PORT}
@@ -394,9 +323,9 @@ AI 流量 (OpenAI / Anthropic / Claude / Claude Code / Google Gemini)
 
 客户端导入（任选其一）：
   - 普通 SS 客户端 (Shadowrocket / NekoBox / v2rayN / Outline 等): 复制上方 SS URI 即可
-  - Clash Verge / Mihomo / ClashX: 把 /root/clash.yaml scp 到本地导入
-  - sing-box 官方客户端：把 /root/client.json scp 到本地，
-    New Profile → Type: Local → Import from file
+  - Clash Verge / Mihomo / ClashX:   ${OUT_DIR}/clash.yaml
+  - sing-box 官方客户端:             ${OUT_DIR}/client.json
+    (New Profile → Type: Local → Import from file)
 
 服务管理：
   systemctl status sing-box
@@ -407,34 +336,25 @@ AI 流量 (OpenAI / Anthropic / Claude / Claude Code / Google Gemini)
   systemctl disable --now sing-box warp-svc
   apt-get purge -y sing-box cloudflare-warp
   rm -f /etc/apt/sources.list.d/{cloudflare-client,sagernet}.list
-  rm -rf /etc/sing-box /root/ss-info.txt /root/client.json /root/clash.yaml
+  rm -rf /etc/sing-box ${OUT_DIR}/ss-info.txt ${OUT_DIR}/client.json ${OUT_DIR}/clash.yaml
 EOF
 
-# 同时把 client.json / ss-info.txt 拷到 sudo 调用者的 home，方便 scp 取走
-if [[ -n "${SUDO_USER:-}" ]] && [[ "${SUDO_USER}" != "root" ]]; then
-    SUDO_HOME=$(getent passwd "${SUDO_USER}" | cut -d: -f6)
-    if [[ -d "${SUDO_HOME}" ]]; then
-        cp /root/client.json  "${SUDO_HOME}/client.json"
-        cp /root/ss-info.txt  "${SUDO_HOME}/ss-info.txt"
-        cp /root/clash.yaml   "${SUDO_HOME}/clash.yaml"
-        chown "${SUDO_USER}:${SUDO_USER}" \
-            "${SUDO_HOME}/client.json" "${SUDO_HOME}/ss-info.txt" "${SUDO_HOME}/clash.yaml"
-        info "已复制 client.json / ss-info.txt / clash.yaml 到 ${SUDO_HOME}/"
-    fi
-fi
+# 修正属主，确保 sudo 调用者可读
+chown "${OUT_OWNER}" \
+    "${OUT_DIR}/client.json" "${OUT_DIR}/clash.yaml" "${OUT_DIR}/ss-info.txt" 2>/dev/null || true
 
 echo ""
-cat /root/ss-info.txt
+cat "${OUT_DIR}/ss-info.txt"
 echo ""
 echo "扫描以下二维码导入 SS 客户端："
 qrencode -t ANSIUTF8 "${SS_URI}"
 echo ""
 echo "================================================================"
-echo " Clash Verge / Mihomo 配置 (已保存到 /root/clash.yaml)："
+echo " Clash Verge 配置 (已保存到 ${OUT_DIR}/clash.yaml)："
 echo "================================================================"
-cat /root/clash.yaml
+cat "${OUT_DIR}/clash.yaml"
 echo ""
 info "全部完成。"
 info "  - SS URI:        见上方"
-info "  - Clash 配置:    /root/clash.yaml"
-info "  - sing-box 配置: /root/client.json"
+info "  - Clash 配置:    ${OUT_DIR}/clash.yaml"
+info "  - sing-box 配置: ${OUT_DIR}/client.json"
