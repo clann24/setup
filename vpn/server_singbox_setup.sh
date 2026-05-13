@@ -35,8 +35,8 @@ fi
 
 info "安装依赖..."
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y -qq curl gnupg lsb-release ca-certificates jq qrencode openssl iproute2
+apt-get update
+apt-get install -y curl gnupg lsb-release ca-certificates jq qrencode openssl iproute2
 
 CODENAME="$(lsb_release -cs)"
 
@@ -47,7 +47,7 @@ curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg \
 echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ ${CODENAME} main" \
     > /etc/apt/sources.list.d/cloudflare-client.list
 
-apt-get update -qq
+apt-get update
 apt-get install -y cloudflare-warp
 
 info "启动 warp-svc 并切换为 proxy 模式..."
@@ -104,7 +104,7 @@ curl -fsSL https://sing-box.app/gpg.key \
 echo "deb [signed-by=/usr/share/keyrings/sagernet.gpg] https://deb.sagernet.org/ * *" \
     > /etc/apt/sources.list.d/sagernet.list
 
-apt-get update -qq
+apt-get update
 apt-get install -y sing-box
 
 # ---------- 3. 写配置 ----------
@@ -229,7 +229,7 @@ fi
 info "客户端配置文件输出目录：${OUT_DIR}"
 
 # 生成 sing-box 客户端 profile（供 sing-box 官方客户端导入）
-cat > "${OUT_DIR}/client.json" <<EOF
+cat > "${OUT_DIR}/singbox.json" <<EOF
 {
   "log": { "level": "info" },
   "dns": {
@@ -265,6 +265,9 @@ cat > "${OUT_DIR}/client.json" <<EOF
   ],
   "route": {
     "rule_set": [
+      { "type": "remote", "tag": "geosite-category-ads-all", "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs",
+        "download_detour": "ss-out" },
       { "type": "remote", "tag": "geosite-cn", "format": "binary",
         "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs",
         "download_detour": "ss-out" },
@@ -275,6 +278,7 @@ cat > "${OUT_DIR}/client.json" <<EOF
     "rules": [
       { "action": "sniff" },
       { "protocol": "dns", "action": "hijack-dns" },
+      { "rule_set": ["geosite-category-ads-all"], "action": "reject" },
       { "ip_is_private": true, "outbound": "direct" },
       { "rule_set": ["geosite-cn", "geoip-cn"], "outbound": "direct" }
     ],
@@ -284,9 +288,9 @@ cat > "${OUT_DIR}/client.json" <<EOF
   }
 }
 EOF
-chmod 600 "${OUT_DIR}/client.json"
+chmod 600 "${OUT_DIR}/singbox.json"
 
-# 生成 Clash Verge 配置（严格按指定格式）
+# 生成 Clash Verge 配置（保持与 vpn/clash.example.yaml 同步）
 cat > "${OUT_DIR}/clash.yaml" <<EOF
 proxies:
   - name: "warp-vps"
@@ -342,6 +346,13 @@ rules:
 EOF
 chmod 600 "${OUT_DIR}/clash.yaml"
 
+# 生成 SS URI + 二维码文件（供 Shadowrocket / NekoBox / v2rayN / Outline 等普通 SS 客户端使用）
+{
+    printf '%s\n\n' "${SS_URI}"
+    qrencode -t ANSIUTF8 "${SS_URI}"
+} > "${OUT_DIR}/shadow.txt"
+chmod 600 "${OUT_DIR}/shadow.txt"
+
 tee "${OUT_DIR}/ss-info.txt" >/dev/null <<EOF
 ========== Shadowsocks 连接信息 ==========
 Server   : ${SERVER_IP}
@@ -355,9 +366,9 @@ AI 流量 (OpenAI / Anthropic / Claude / Claude Code / Google Gemini)
         由 sing-box 自动从 Cloudflare WARP 出口；其它流量直连 VPS 原 IP。
 
 客户端导入（任选其一）：
-  - 普通 SS 客户端 (Shadowrocket / NekoBox / v2rayN / Outline 等): 复制上方 SS URI 即可
+  - 普通 SS 客户端 (Shadowrocket / NekoBox / v2rayN / Outline 等): ${OUT_DIR}/shadow.txt
   - Clash Verge / Mihomo / ClashX:   ${OUT_DIR}/clash.yaml
-  - sing-box 官方客户端:             ${OUT_DIR}/client.json
+  - sing-box 官方客户端:             ${OUT_DIR}/singbox.json
     (New Profile → Type: Local → Import from file)
 
 服务管理：
@@ -369,12 +380,12 @@ AI 流量 (OpenAI / Anthropic / Claude / Claude Code / Google Gemini)
   systemctl disable --now sing-box warp-svc
   apt-get purge -y sing-box cloudflare-warp
   rm -f /etc/apt/sources.list.d/{cloudflare-client,sagernet}.list
-  rm -rf /etc/sing-box ${OUT_DIR}/ss-info.txt ${OUT_DIR}/client.json ${OUT_DIR}/clash.yaml
+  rm -rf /etc/sing-box ${OUT_DIR}/ss-info.txt ${OUT_DIR}/singbox.json ${OUT_DIR}/clash.yaml ${OUT_DIR}/shadow.txt
 EOF
 
 # 修正属主，确保 sudo 调用者可读
 chown "${OUT_OWNER}" \
-    "${OUT_DIR}/client.json" "${OUT_DIR}/clash.yaml" "${OUT_DIR}/ss-info.txt" 2>/dev/null || true
+    "${OUT_DIR}/singbox.json" "${OUT_DIR}/clash.yaml" "${OUT_DIR}/shadow.txt" "${OUT_DIR}/ss-info.txt" 2>/dev/null || true
 
 echo ""
 cat "${OUT_DIR}/ss-info.txt"
@@ -389,5 +400,6 @@ cat "${OUT_DIR}/clash.yaml"
 echo ""
 info "全部完成。"
 info "  - SS URI:        见上方"
+info "  - SS URI 文件:   ${OUT_DIR}/shadow.txt"
 info "  - Clash 配置:    ${OUT_DIR}/clash.yaml"
-info "  - sing-box 配置: ${OUT_DIR}/client.json"
+info "  - sing-box 配置: ${OUT_DIR}/singbox.json"
