@@ -42,6 +42,14 @@ rule-providers:
     interval: 86400
 
 rules:
+  - DOMAIN-SUFFIX,bytedance.com,DIRECT
+  - DOMAIN-SUFFIX,bytedance.net,DIRECT
+  - DOMAIN-SUFFIX,byted.org,DIRECT
+  - DOMAIN-SUFFIX,bytedns.net,DIRECT
+  - DOMAIN-SUFFIX,bytenet.org,DIRECT
+  - DOMAIN-SUFFIX,toutiaoyun.com,DIRECT
+  - DOMAIN-SUFFIX,feishu.cn,DIRECT
+  - DOMAIN-SUFFIX,larksuite.com,DIRECT
   - RULE-SET,reject,REJECT
   - RULE-SET,direct,DIRECT
   - RULE-SET,lancidr,DIRECT

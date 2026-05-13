@@ -278,6 +278,16 @@ cat > "${OUT_DIR}/singbox.json" <<EOF
     "rules": [
       { "action": "sniff" },
       { "protocol": "dns", "action": "hijack-dns" },
+      { "domain_suffix": [
+          "bytedance.com",
+          "bytedance.net",
+          "byted.org",
+          "bytedns.net",
+          "bytenet.org",
+          "toutiaoyun.com",
+          "feishu.cn",
+          "larksuite.com"
+        ], "outbound": "direct" },
       { "rule_set": ["geosite-category-ads-all"], "action": "reject" },
       { "ip_is_private": true, "outbound": "direct" },
       { "rule_set": ["geosite-cn", "geoip-cn"], "outbound": "direct" }
@@ -336,6 +346,14 @@ rule-providers:
     interval: 86400
 
 rules:
+  - DOMAIN-SUFFIX,bytedance.com,DIRECT
+  - DOMAIN-SUFFIX,bytedance.net,DIRECT
+  - DOMAIN-SUFFIX,byted.org,DIRECT
+  - DOMAIN-SUFFIX,bytedns.net,DIRECT
+  - DOMAIN-SUFFIX,bytenet.org,DIRECT
+  - DOMAIN-SUFFIX,toutiaoyun.com,DIRECT
+  - DOMAIN-SUFFIX,feishu.cn,DIRECT
+  - DOMAIN-SUFFIX,larksuite.com,DIRECT
   - RULE-SET,reject,REJECT
   - RULE-SET,direct,DIRECT
   - RULE-SET,lancidr,DIRECT
