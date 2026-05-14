@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# Ubuntu 客户端一键安装 sing-box 并以 TUN 模式连接到 VPN。
-# 前提：当前目录（或第一个参数指定的路径）存在 singbox.json 配置文件。
+# Ubuntu 客户端一键安装 sing-box 并以 TUN 模式连接到 VPS (Hysteria2 出口)。
+# 前提：当前目录（或第一个参数指定的路径）存在 singbox.json 配置文件，
+#       该文件应包含一个 type=hysteria2 的 outbound (server_singbox_setup.sh 已生成)。
 #
 # 用法:
 #   sudo bash client_singbox_ubuntu_setup.sh [path/to/singbox.json]
@@ -17,6 +18,13 @@ CONF_SRC="${1:-./singbox.json}"
 
 [[ $EUID -eq 0 ]] || { error "请用 root 运行 (sudo bash $0)"; exit 1; }
 [[ -f "$CONF_SRC" ]] || { error "找不到配置文件: $CONF_SRC"; exit 1; }
+
+# 简单校验：确认配置中含有 hysteria2 出站
+if ! grep -q '"type"[[:space:]]*:[[:space:]]*"hysteria2"' "$CONF_SRC"; then
+    warn "未在 $CONF_SRC 中检测到 hysteria2 出站；该脚本预期使用 server_singbox_setup.sh 生成的 HY2 配置。"
+    read -rp "仍然继续？(y/N) " ans
+    [[ "${ans,,}" == "y" ]] || exit 1
+fi
 
 if ! grep -qiE "ubuntu|debian" /etc/os-release; then
     warn "本脚本仅在 Ubuntu / Debian 测试过，其它发行版可能失败。"
@@ -75,8 +83,10 @@ cat <<EOF
   systemctl stop sing-box
   journalctl -u sing-box -f
 
-验证出口：
+验证出口 (走 Hysteria2 → VPS → 直连)：
   curl -s https://www.cloudflare.com/cdn-cgi/trace | grep -E '^ip='
+验证 AI 流量走 WARP 出口：
+  curl -s https://chatgpt.com/cdn-cgi/trace | grep -E '^(ip|warp)='
 
 更换配置：
   sudo install -m 0644 new.json /etc/sing-box/config.json
