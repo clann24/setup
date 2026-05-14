@@ -1,13 +1,4 @@
 proxies:
-  - name: "warp-vps-hy2"
-    type: hysteria2
-    server: 43.165.173.189
-    port: 8443
-    password: "53GydXE0fJ9OzJk4gLfjng=="
-    sni: www.bing.com
-    skip-cert-verify: true
-    alpn:
-      - h3
   - name: "warp-vps-vless"
     type: vless
     server: 43.165.173.189
@@ -22,6 +13,15 @@ proxies:
     reality-opts:
       public-key: REPLACE_WITH_PUBLIC_KEY
       short-id: REPLACE_WITH_SHORT_ID
+  - name: "warp-vps-hy2"
+    type: hysteria2
+    server: 43.165.173.189
+    port: 8443
+    password: "53GydXE0fJ9OzJk4gLfjng=="
+    sni: www.bing.com
+    skip-cert-verify: true
+    alpn:
+      - h3
   - name: "warp-vps-ss"
     type: ss
     server: 43.165.173.189

@@ -457,15 +457,6 @@ chmod 600 "${OUT_DIR}/singbox.json"
 # 生成 Clash Verge / Mihomo 配置（同时含 Hysteria2 与 Shadowsocks，默认 Hysteria2）
 cat > "${OUT_DIR}/clash.yaml" <<EOF
 proxies:
-  - name: "warp-vps-hy2"
-    type: hysteria2
-    server: ${SERVER_IP}
-    port: ${HY2_PORT}
-    password: "${HY2_PASSWORD}"
-    sni: ${HY2_SNI}
-    skip-cert-verify: true
-    alpn:
-      - h3
   - name: "warp-vps-vless"
     type: vless
     server: ${SERVER_IP}
@@ -480,6 +471,15 @@ proxies:
     reality-opts:
       public-key: ${REALITY_PUBLIC_KEY}
       short-id: ${REALITY_SHORT_ID}
+  - name: "warp-vps-hy2"
+    type: hysteria2
+    server: ${SERVER_IP}
+    port: ${HY2_PORT}
+    password: "${HY2_PASSWORD}"
+    sni: ${HY2_SNI}
+    skip-cert-verify: true
+    alpn:
+      - h3
   - name: "warp-vps-ss"
     type: ss
     server: ${SERVER_IP}
