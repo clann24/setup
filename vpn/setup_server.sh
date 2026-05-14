@@ -444,6 +444,13 @@ cat > "${OUT_DIR}/singbox.json" <<EOF
         ],
         "outbound": "direct"
       },
+      {
+        "domain_suffix": [
+          "bytedance.net",
+          "byted.org"
+        ],
+        "outbound": "direct"
+      },
       { "rule_set": ["geosite-cn", "geoip-cn"], "outbound": "direct" }
     ],
     "final": "proxy",
@@ -534,6 +541,8 @@ rules:
   - DOMAIN-SUFFIX,steamstatic.com,DIRECT
   - DOMAIN,client-update.akamai.steamstatic.com,DIRECT
   - DOMAIN,media.steampowered.com,DIRECT
+  - DOMAIN-SUFFIX,bytedance.net,DIRECT
+  - DOMAIN-SUFFIX,byted.org,DIRECT
   - GEOIP,LAN,DIRECT,no-resolve
   - GEOIP,CN,DIRECT,no-resolve
   - RULE-SET,cncidr,DIRECT,no-resolve

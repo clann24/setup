@@ -108,6 +108,13 @@
         ],
         "outbound": "direct"
       },
+      {
+        "domain_suffix": [
+          "bytedance.net",
+          "byted.org"
+        ],
+        "outbound": "direct"
+      },
       { "rule_set": ["geosite-cn", "geoip-cn"], "outbound": "direct" }
     ],
     "final": "proxy",
