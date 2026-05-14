@@ -547,6 +547,23 @@ rules:
   - GEOIP,CN,DIRECT,no-resolve
   - RULE-SET,cncidr,DIRECT,no-resolve
   - MATCH,PROXY
+
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  fake-ip-filter:
+    - "+.byted.org"
+    - "+.bytedance.net"
+    - "+.feishu.cn"
+    - "+.larkoffice.com"
+    - "+.lark.com"
+  nameserver-policy:
+    "+.byted.org": 10.1.0.2
+    "+.bytedance.net": 10.1.0.2
+    "+.feishu.cn": 10.1.0.2
+  nameserver:
+    - 114.114.114.114
+    - https://1.1.1.1/dns-query
 EOF
 chmod 600 "${OUT_DIR}/clash.yaml"
 
