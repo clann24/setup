@@ -332,10 +332,16 @@ else
 fi
 info "客户端配置文件输出目录：${OUT_DIR}"
 
-# 生成 sing-box 客户端 profile（同时含 Hysteria2 与 Shadowsocks 出站，默认 Hysteria2）
+# 生成 sing-box 客户端 profile（VLESS+REALITY 默认 / Hysteria2 / Shadowsocks，可通过 Clash API 切换）
 cat > "${OUT_DIR}/singbox.json" <<EOF
 {
   "log": { "level": "info" },
+  "experimental": {
+    "clash_api": {
+      "external_controller": "127.0.0.1:9090",
+      "default_mode": "rule"
+    }
+  },
   "dns": {
     "servers": [
       { "type": "https", "tag": "remote", "server": "1.1.1.1", "detour": "proxy" },

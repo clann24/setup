@@ -1,8 +1,14 @@
 {
   "log": { "level": "info" },
+  "experimental": {
+    "clash_api": {
+      "external_controller": "127.0.0.1:9090",
+      "default_mode": "rule"
+    }
+  },
   "dns": {
     "servers": [
-      { "type": "https", "tag": "remote", "server": "1.1.1.1", "detour": "hy2-out" },
+      { "type": "https", "tag": "remote", "server": "1.1.1.1", "detour": "proxy" },
       { "type": "local", "tag": "local" }
     ],
     "rules": [
@@ -22,11 +28,36 @@
   ],
   "outbounds": [
     {
+      "type": "selector",
+      "tag": "proxy",
+      "outbounds": ["vless-out", "hy2-out", "ss-out"],
+      "default": "vless-out"
+    },
+    {
+      "type": "vless",
+      "tag": "vless-out",
+      "server": "43.165.184.43",
+      "server_port": 443,
+      "uuid": "c151877b-e45e-4b65-9ba7-1334905ebbad",
+      "flow": "xtls-rprx-vision",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.microsoft.com",
+        "utls": { "enabled": true, "fingerprint": "chrome" },
+        "reality": {
+          "enabled": true,
+          "public_key": "k4K6iC94bRwsvwfvkApN9Aek-wlwUbbT4QVe_u3r6Ew",
+          "short_id": "98c021e2ded08f2e"
+        }
+      }
+    },
+    {
       "type": "hysteria2",
       "tag": "hy2-out",
-      "server": "43.165.173.189",
+      "server": "43.165.184.43",
       "server_port": 8443,
-      "password": "53GydXE0fJ9OzJk4gLfjng==",
+      "password": "ufUtKnQdL74BLIdcCjqK/Q==",
       "tls": {
         "enabled": true,
         "server_name": "www.bing.com",
@@ -34,29 +65,54 @@
         "insecure": true
       }
     },
+    {
+      "type": "shadowsocks",
+      "tag": "ss-out",
+      "server": "43.165.184.43",
+      "server_port": 444,
+      "method": "aes-256-gcm",
+      "password": "fX47y0/CviGWjFgLDAfS1Q=="
+    },
     { "type": "direct", "tag": "direct" }
   ],
   "route": {
     "rule_set": [
       { "type": "remote", "tag": "geosite-category-ads-all", "format": "binary",
         "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs",
-        "download_detour": "hy2-out" },
+        "download_detour": "proxy" },
       { "type": "remote", "tag": "geosite-cn", "format": "binary",
         "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs",
-        "download_detour": "hy2-out" },
+        "download_detour": "proxy" },
       { "type": "remote", "tag": "geoip-cn", "format": "binary",
         "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs",
-        "download_detour": "hy2-out" }
+        "download_detour": "proxy" }
     ],
     "rules": [
       { "action": "sniff" },
       { "protocol": "dns", "action": "hijack-dns" },
       { "rule_set": ["geosite-category-ads-all"], "action": "reject" },
       { "ip_is_private": true, "outbound": "direct" },
+      {
+        "domain_suffix": [
+          "steamcontent.com",
+          "steamserver.net",
+          "steamcdn-a.akamaihd.net",
+          "steamstatic.com"
+        ],
+        "outbound": "direct"
+      },
+      {
+        "domain": [
+          "client-update.akamai.steamstatic.com",
+          "media.steampowered.com"
+        ],
+        "outbound": "direct"
+      },
       { "rule_set": ["geosite-cn", "geoip-cn"], "outbound": "direct" }
     ],
-    "final": "hy2-out",
+    "final": "proxy",
     "auto_detect_interface": true,
     "default_domain_resolver": "local"
   }
 }
+

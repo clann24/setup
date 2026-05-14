@@ -36,7 +36,7 @@ fi
 info "安装依赖..."
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y curl gnupg ca-certificates
+apt-get install -y curl gnupg ca-certificates jq
 
 info "添加 sing-box 仓库..."
 curl -fsSL https://sing-box.app/gpg.key \
@@ -84,10 +84,24 @@ cat <<EOF
   systemctl stop sing-box
   journalctl -u sing-box -f
 
-验证出口 (走 Hysteria2 → VPS → 直连)：
+验证出口 (走 proxy 选中的出站 → VPS → 直连)：
   curl -s https://www.cloudflare.com/cdn-cgi/trace | grep -E '^ip='
 验证 AI 流量走 WARP 出口：
   curl -s https://chatgpt.com/cdn-cgi/trace | grep -E '^(ip|warp)='
+
+查看当前实际使用的出站协议（Clash API，监听 127.0.0.1:9090）：
+  curl -s http://127.0.0.1:9090/proxies/proxy | jq -r .now
+  # 输出 vless-out / hy2-out / ss-out
+
+切换出站：
+  curl -s -X PUT http://127.0.0.1:9090/proxies/proxy \
+       -H 'Content-Type: application/json' \
+       -d '{"name":"hy2-out"}'    # 或 vless-out / ss-out
+  # 切换后无需重启 sing-box，立即生效
+
+也可用 socket 状态粗略判断：
+  ss -tnp 2>/dev/null | grep sing-box | grep -E ':(443|444)'   # VLESS / SS
+  ss -unp 2>/dev/null | grep sing-box | grep ':8443'           # Hysteria2
 
 更换配置：
   sudo install -m 0644 config.json /etc/sing-box/config.json
