@@ -90,7 +90,7 @@ cat <<EOF
   curl -s https://chatgpt.com/cdn-cgi/trace | grep -E '^(ip|warp)='
 
 更换配置：
-  sudo install -m 0644 new.json /etc/sing-box/config.json
+  sudo install -m 0644 config.json /etc/sing-box/config.json
   sudo systemctl restart sing-box
 
 卸载：
