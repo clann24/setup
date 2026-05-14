@@ -1,5 +1,5 @@
 proxies:
-  - name: "warp-vps"
+  - name: "warp-vps-hy2"
     type: hysteria2
     server: 43.165.173.189
     port: 8443
@@ -8,12 +8,34 @@ proxies:
     skip-cert-verify: true
     alpn:
       - h3
+  - name: "warp-vps-vless"
+    type: vless
+    server: 43.165.173.189
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000000
+    network: tcp
+    tls: true
+    udp: true
+    flow: xtls-rprx-vision
+    servername: www.microsoft.com
+    client-fingerprint: chrome
+    reality-opts:
+      public-key: REPLACE_WITH_PUBLIC_KEY
+      short-id: REPLACE_WITH_SHORT_ID
+  - name: "warp-vps-ss"
+    type: ss
+    server: 43.165.173.189
+    port: 444
+    cipher: aes-256-gcm
+    password: "REPLACE_WITH_PASSWORD"
 
 proxy-groups:
   - name: "PROXY"
     type: select
     proxies:
-      - warp-vps
+      - warp-vps-vless
+      - warp-vps-hy2
+      - warp-vps-ss
 
 rule-providers:
   reject:

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 #
-# Ubuntu 客户端一键安装 sing-box 并以 TUN 模式连接到 VPS (Hysteria2 出口)。
-# 前提：当前目录（或第一个参数指定的路径）存在 singbox.json 配置文件，
-#       该文件应包含一个 type=hysteria2 的 outbound (server_singbox_setup.sh 已生成)。
+# Ubuntu 客户端一键安装 sing-box 并以 TUN 模式连接到 VPS。
+# 前提：当前目录（或第一个参数指定的路径）存在 singbox.json 配置文件。
+#       (setup_server.sh 生成的 singbox.json 默认走 VLESS+REALITY，
+#        可在 outbounds[type=selector tag=proxy] 中切换到 hy2-out / ss-out。)
 #
 # 用法:
-#   sudo bash client_singbox_ubuntu_setup.sh [path/to/singbox.json]
+#   sudo bash setup_client_ubuntu.sh [path/to/singbox.json]
 #
 set -euo pipefail
 
@@ -19,9 +20,9 @@ CONF_SRC="${1:-./singbox.json}"
 [[ $EUID -eq 0 ]] || { error "请用 root 运行 (sudo bash $0)"; exit 1; }
 [[ -f "$CONF_SRC" ]] || { error "找不到配置文件: $CONF_SRC"; exit 1; }
 
-# 简单校验：确认配置中含有 hysteria2 出站
-if ! grep -q '"type"[[:space:]]*:[[:space:]]*"hysteria2"' "$CONF_SRC"; then
-    warn "未在 $CONF_SRC 中检测到 hysteria2 出站；该脚本预期使用 server_singbox_setup.sh 生成的 HY2 配置。"
+# 简单校验：确认配置中含有 proxy 选择器或 vless 出站
+if ! grep -qE '"tag"[[:space:]]*:[[:space:]]*"proxy"|"type"[[:space:]]*:[[:space:]]*"vless"' "$CONF_SRC"; then
+    warn "未在 $CONF_SRC 中检测到 proxy/vless 出站；该脚本预期使用 setup_server.sh 生成的配置。"
     read -rp "仍然继续？(y/N) " ans
     [[ "${ans,,}" == "y" ]] || exit 1
 fi
